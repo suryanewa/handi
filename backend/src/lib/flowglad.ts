@@ -1,6 +1,7 @@
 import { FlowgladServer } from '@flowglad/server';
 
 const DEMO_MODE = process.env.DEMO_MODE === 'true';
+const SECRET_KEY = process.env.FLOWGLAD_SECRET_KEY;
 
 // In-memory stub for hackathon demo. Replace with real DB (e.g. Supabase) for production.
 const DEMO_USERS: Record<string, { email: string; name: string }> = {
@@ -14,7 +15,7 @@ function createFlowgladStub(_customerExternalId: string) {
       checkFeatureAccess: () => true,
       subscriptions: [] as { id: string; status: string }[],
     }),
-    createUsageEvent: async () => {},
+    createUsageEvent: async () => { },
     findOrCreateCustomer: async () => ({}),
     createCheckoutSession: async () => ({ checkoutSession: null }),
   };
@@ -22,8 +23,18 @@ function createFlowgladStub(_customerExternalId: string) {
 
 export const flowglad = (customerExternalId: string) => {
   if (DEMO_MODE) {
+    console.log('[Flowglad] Using DEMO stub for customer:', customerExternalId);
     return createFlowgladStub(customerExternalId);
   }
+
+  if (!SECRET_KEY) {
+    console.error('[Flowglad] FLOWGLAD_SECRET_KEY is not set!');
+    throw new Error('FLOWGLAD_SECRET_KEY environment variable is required');
+  }
+
+  console.log('[Flowglad] Initializing FlowgladServer for customer:', customerExternalId);
+  console.log('[Flowglad] Using secret key:', SECRET_KEY.substring(0, 15) + '...');
+
   return new FlowgladServer({
     customerExternalId,
     getCustomerDetails: async (externalId: string) => {
