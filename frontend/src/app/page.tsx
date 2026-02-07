@@ -21,14 +21,14 @@ export default function HomePage() {
               href="/library"
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500"
             >
-              Open Library
+              Open Marketplace
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-2 rounded-lg border border-app px-4 py-2.5 text-sm font-medium text-app-fg transition hover:bg-app-surface"
             >
-              Open Dashboard
+              Open Lab
             </Link>
           </div>
         </div>

@@ -122,7 +122,7 @@ export function RunBlockPanel({
               <Lock className="h-4 w-4" />
               This block is locked
             </p>
-            <p className="mb-3 text-amber-100/90">Unlock it to run from the dashboard canvas.</p>
+            <p className="mb-3 text-amber-100/90">Unlock it to run from the Lab canvas.</p>
             <button
               onClick={async () => {
                 const baseUrl = window.location.origin;
@@ -175,7 +175,7 @@ export function RunBlockPanel({
                 )}
               </div>
             ))}
-            {block.inputs.some((i) => i.type === 'file') && <p className="text-xs text-app-soft">File input blocks are best run from Library.</p>}
+            {block.inputs.some((i) => i.type === 'file') && <p className="text-xs text-app-soft">File input blocks are best run from Marketplace.</p>}
             {missingLabel && missingLabel.type === 'connected' && (
               <p className="text-xs text-amber-300">Run &quot;{missingLabel.sourceLabel}&quot; first to fill connected inputs.</p>
             )}

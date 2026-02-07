@@ -67,9 +67,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-6 md:px-6 md:py-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-app-fg">Checkout</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-app-fg">Cart</h1>
       <p className="mt-1 text-sm text-app-soft">
-        Unlock individual blocks with Flowglad hosted checkout, then return to Library with updated entitlements.
+        Unlock individual blocks with Flowglad hosted checkout, then return to Marketplace with updated entitlements.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -92,7 +92,7 @@ export default function CheckoutPage() {
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5">
             <p className="text-sm text-emerald-300">All listed blocks are unlocked for this account.</p>
             <Link href="/library" className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-emerald-200 hover:text-emerald-100">
-              Return to Library
+              Return to Marketplace
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

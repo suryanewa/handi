@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Blocks, CreditCard, User, MoonStar, Sun } from 'lucide-react';
+import { FlaskConical, Store, ShoppingCart, User, MoonStar, Sun } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 const NAV = [
-  { href: '/library', label: 'Library', icon: Blocks },
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/checkout', label: 'Checkout', icon: CreditCard },
+  { href: '/library', label: 'Marketplace', icon: Store },
+  { href: '/dashboard', label: 'Lab', icon: FlaskConical },
+  { href: '/checkout', label: 'Cart', icon: ShoppingCart },
   { href: '/profile', label: 'Profile', icon: User },
 ] as const;
 
@@ -20,7 +20,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-20 shrink-0 border-b border-app bg-app-surface/85 backdrop-blur">
       <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 md:px-6">
         <Link href="/" className="text-base font-semibold tracking-tight text-app-fg md:text-lg">
-          AI Block Marketplace
+          Handi
         </Link>
 
         <nav className="ml-2 flex items-center gap-1 overflow-x-auto">

@@ -17,7 +17,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'AI Block Marketplace',
+  title: 'Handi',
   description: 'Modular AI-powered blocks with entitlement-based access and Flowglad billing',
 };
 
