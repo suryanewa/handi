@@ -32,9 +32,10 @@ export function RunBlockPanel({
   const hasAccess = DEMO_MODE || (loaded && (checkFeatureAccess?.(block?.featureSlug ?? '') ?? false));
   const getOutput = useFlowRunStore((s) => s.getOutput);
   const setNodeOutput = useFlowRunStore((s) => s.setNodeOutput);
+  const getOutputs = useFlowRunStore((s) => s.outputsByNode[nodeId]);
 
   const [inputs, setInputs] = useState<Record<string, string>>({});
-  const [output, setOutput] = useState<Record<string, unknown> | null>(null);
+  const [output, setOutput] = useState<Record<string, unknown> | null>(() => getOutputs ?? null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const logAdd = useExecutionLog((s) => s.add);

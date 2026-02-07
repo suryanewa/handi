@@ -19,7 +19,7 @@ import {
   type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Home } from 'lucide-react';
+import { Home, ScrollText } from 'lucide-react';
 import { BlockNode } from '@/components/BlockNode';
 import { BlockPalette } from '@/components/BlockPalette';
 import { RunBlockPanel } from '@/components/RunBlockPanel';
@@ -34,6 +34,7 @@ import { getBlockById } from 'shared';
 import { topologicalOrder, getEntryInputs, getInputSource } from '@/lib/workflowLogic';
 import { EntryInputsModal, type EntryInputField } from '@/components/EntryInputsModal';
 import { useFlowRunStore } from '@/store/flowRunStore';
+import { useExecutionLog } from '@/store/executionLog';
 
 const nodeTypes: NodeTypes = { block: BlockNode };
 
@@ -128,6 +129,7 @@ function FlowCanvas({
   selectedNodeIds,
   setSelectedNodeIds,
   removeNodes,
+  onNodeDoubleClick,
 }: {
   nodes: Node[];
   setNodes: (u: Node[] | ((prev: Node[]) => Node[])) => void;
@@ -142,6 +144,7 @@ function FlowCanvas({
   selectedNodeIds: string[];
   setSelectedNodeIds: (ids: string[]) => void;
   removeNodes: (ids: string[]) => void;
+  onNodeDoubleClick: (event: React.MouseEvent, node: Node) => void;
 }) {
   const { screenToFlowPosition } = useReactFlow();
 
@@ -224,24 +227,24 @@ function FlowCanvas({
 
   const menuItems = contextMenu
     ? [
-        runBlockItem(() => {
-          if (contextMenu.node.data) {
-            setRunPanelNode({
-              id: contextMenu.node.id,
-              data: {
-                blockId: String(contextMenu.node.data.blockId),
-                label: String(contextMenu.node.data.label),
-                icon: contextMenu.node.data.icon,
-              },
-            });
-          }
-          setContextMenu(null);
-        }),
-        removeNodeItem(() => {
-          removeNodes([contextMenu.node.id]);
-          setContextMenu(null);
-        }),
-      ]
+      runBlockItem(() => {
+        if (contextMenu.node.data) {
+          setRunPanelNode({
+            id: contextMenu.node.id,
+            data: {
+              blockId: String(contextMenu.node.data.blockId),
+              label: String(contextMenu.node.data.label),
+              icon: contextMenu.node.data.icon,
+            },
+          });
+        }
+        setContextMenu(null);
+      }),
+      removeNodeItem(() => {
+        removeNodes([contextMenu.node.id]);
+        setContextMenu(null);
+      }),
+    ]
     : [];
 
   return (
@@ -255,6 +258,7 @@ function FlowCanvas({
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodeContextMenu={handleNodeContextMenu}
+        onNodeDoubleClick={onNodeDoubleClick}
         onSelectionChange={onSelectionChange}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
@@ -311,6 +315,7 @@ export default function DashboardPage() {
   const setNodeOutput = useFlowRunStore((s) => s.setNodeOutput);
   const getOutput = useFlowRunStore((s) => s.getOutput);
   const clearRunCache = useFlowRunStore((s) => s.clearAll);
+  const { isVisible, setVisible } = useExecutionLog();
 
   useEffect(() => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -602,6 +607,16 @@ export default function DashboardPage() {
         </button>
         <button
           type="button"
+          onClick={() => setVisible(!isVisible)}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-zinc-600 flex items-center gap-2 ${isVisible ? 'bg-zinc-600 text-white' : 'bg-zinc-700 text-zinc-200'
+            }`}
+          title="Toggle execution log"
+        >
+          <ScrollText className="h-4 w-4" />
+          Logs
+        </button>
+        <button
+          type="button"
           onClick={handleExport}
           className="rounded-lg bg-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-200 hover:bg-zinc-600"
         >
@@ -642,9 +657,20 @@ export default function DashboardPage() {
                 setContextMenu={setContextMenu}
                 runPanelNode={runPanelNode}
                 setRunPanelNode={setRunPanelNode}
-                selectedNodeIds={selectedNodeIds}
                 setSelectedNodeIds={setSelectedNodeIds}
                 removeNodes={removeNodes}
+                onNodeDoubleClick={(e, node) => {
+                  if (node.data) {
+                    setRunPanelNode({
+                      id: node.id,
+                      data: {
+                        blockId: String(node.data.blockId),
+                        label: String(node.data.label),
+                        icon: node.data.icon,
+                      },
+                    });
+                  }
+                }}
               />
             </ReactFlowProvider>
           </div>
