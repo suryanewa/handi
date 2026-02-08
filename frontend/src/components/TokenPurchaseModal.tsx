@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, Coins, Zap, Calendar, Loader2 } from 'lucide-react';
 import { useTokens } from '@/contexts/TokenContext';
-import { API_URL, DEMO_USER_ID } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 
 // Define token packs locally to avoid import issues
 interface TokenPack {
@@ -76,20 +76,19 @@ export function TokenPurchaseModal({ isOpen, onClose }: TokenPurchaseModalProps)
         setError(null);
 
         try {
-            const res = await fetch(`${API_URL}/api/tokens/purchase`, {
+            const data = await apiFetch<{
+                demoMode?: boolean;
+                error?: string;
+                url?: string;
+                checkoutSession?: { checkoutUrl?: string };
+            }>('/api/tokens/purchase', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-User-Id': DEMO_USER_ID,
-                },
-                body: JSON.stringify({
+                body: {
                     priceSlug,
                     successUrl: window.location.href,
                     cancelUrl: window.location.href,
-                }),
+                },
             });
-
-            const data = await res.json();
 
             if (data.demoMode) {
                 await refresh();

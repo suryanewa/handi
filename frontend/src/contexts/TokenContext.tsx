@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
-import { API_URL, DEMO_USER_ID } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 
 interface TokenContextValue {
     balance: number;
@@ -9,6 +9,18 @@ interface TokenContextValue {
     refresh: () => Promise<void>;
     deductLocally: (amount: number) => void;
     verifyPurchases: () => Promise<{ tokensAdded: number }>;
+}
+
+interface TokenBalanceResponse {
+    balance: number;
+    subscription: { interval: string | null; lastRefresh: number | null } | null;
+}
+
+interface VerifyPurchaseResponse {
+    success: boolean;
+    tokensAdded: number;
+    newBalance: number;
+    purchasesProcessed: number;
 }
 
 const TokenContext = createContext<TokenContextValue>({
@@ -25,13 +37,8 @@ export function TokenProvider({ children }: { children: ReactNode }) {
 
     const refresh = async () => {
         try {
-            const res = await fetch(`${API_URL}/api/tokens`, {
-                headers: { 'X-User-Id': DEMO_USER_ID },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setBalance(data.balance);
-            }
+            const data = await apiFetch<TokenBalanceResponse>('/api/tokens');
+            setBalance(data.balance);
         } catch (e) {
             console.error('[Tokens] Failed to fetch balance:', e);
         } finally {
@@ -46,21 +53,14 @@ export function TokenProvider({ children }: { children: ReactNode }) {
     // Verify and credit any pending Flowglad purchases
     const verifyPurchases = async (): Promise<{ tokensAdded: number }> => {
         try {
-            const res = await fetch(`${API_URL}/api/tokens/verify-purchase`, {
+            const data = await apiFetch<VerifyPurchaseResponse>('/api/tokens/verify-purchase', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-User-Id': DEMO_USER_ID,
-                },
             });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.tokensAdded > 0) {
-                    setBalance(data.newBalance);
-                    console.log(`[Tokens] Verified ${data.purchasesProcessed} purchases, added ${data.tokensAdded} tokens`);
-                }
-                return { tokensAdded: data.tokensAdded ?? 0 };
+            if (data.tokensAdded > 0) {
+                setBalance(data.newBalance);
+                console.log(`[Tokens] Verified ${data.purchasesProcessed} purchases, added ${data.tokensAdded} tokens`);
             }
+            return { tokensAdded: data.tokensAdded ?? 0 };
         } catch (e) {
             console.error('[Tokens] Failed to verify purchases:', e);
         }
