@@ -2,10 +2,11 @@ import { Router } from 'express';
 import { requireAuth } from '../lib/auth.js';
 import {
   createWorkflow,
-  getUserWorkflows,
-  getWorkflow,
+  listWorkflows,
+  getWorkflowById,
   updateWorkflow,
   deleteWorkflow,
+  WorkflowNotFoundError,
 } from '../services/workflows.js';
 
 export const workflowsRouter = Router();
@@ -41,17 +42,18 @@ workflowsRouter.post('/', requireAuth, async (req, res) => {
 
 /**
  * GET /api/workflows
- * Get all workflows for current user.
+ * List marketplace workflows.
  */
 workflowsRouter.get('/', requireAuth, async (req, res) => {
   try {
-    const userId = req.authUserId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    const workflows = await getUserWorkflows(userId);
+    const limitRaw = req.query.limit;
+    const cursorRaw = req.query.cursor;
+    const parsedLimit = Number.parseInt(String(limitRaw ?? ''), 10);
+    const limit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
+    const cursor = typeof cursorRaw === 'string' && cursorRaw.trim() ? cursorRaw : undefined;
 
-    res.json(workflows);
+    const result = await listWorkflows({ limit, cursor });
+    res.json(result);
   } catch (error) {
     console.error('[Workflows] List error:', error);
     res.status(500).json({
@@ -66,13 +68,8 @@ workflowsRouter.get('/', requireAuth, async (req, res) => {
  */
 workflowsRouter.get('/:id', requireAuth, async (req, res) => {
   try {
-    const userId = req.authUserId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
     const workflowId = String(req.params.id);
-
-    const workflow = await getWorkflow(userId, workflowId);
+    const workflow = await getWorkflowById(workflowId);
 
     if (!workflow) {
       return res.status(404).json({
@@ -107,6 +104,11 @@ workflowsRouter.patch('/:id', requireAuth, async (req, res) => {
     res.json(workflow);
   } catch (error) {
     console.error('[Workflows] Update error:', error);
+    if (error instanceof WorkflowNotFoundError) {
+      return res.status(404).json({
+        error: error.message,
+      });
+    }
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to update workflow',
     });
@@ -130,6 +132,11 @@ workflowsRouter.delete('/:id', requireAuth, async (req, res) => {
     res.status(204).send();
   } catch (error) {
     console.error('[Workflows] Delete error:', error);
+    if (error instanceof WorkflowNotFoundError) {
+      return res.status(404).json({
+        error: error.message,
+      });
+    }
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to delete workflow',
     });

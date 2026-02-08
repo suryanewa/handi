@@ -1,5 +1,67 @@
 import { supabase, Workflow } from '../lib/supabase.js';
 
+const DEFAULT_LIST_LIMIT = 20;
+const MAX_LIST_LIMIT = 100;
+
+export class WorkflowNotFoundError extends Error {
+  constructor(message = 'Workflow not found') {
+    super(message);
+    this.name = 'WorkflowNotFoundError';
+  }
+}
+
+export type ListWorkflowsOptions = {
+  limit?: number;
+  cursor?: string;
+};
+
+export type ListWorkflowsResult = {
+  workflows: Workflow[];
+  nextCursor: string | null;
+};
+
+function normalizeLimit(limit?: number): number {
+  if (!Number.isFinite(limit)) {
+    return DEFAULT_LIST_LIMIT;
+  }
+  return Math.min(Math.max(Math.trunc(limit as number), 1), MAX_LIST_LIMIT);
+}
+
+/**
+ * List workflows for the marketplace, newest first.
+ * Cursor is the previous page's last updated_at value.
+ */
+export async function listWorkflows(options: ListWorkflowsOptions = {}): Promise<ListWorkflowsResult> {
+  const limit = normalizeLimit(options.limit);
+
+  let query = supabase
+    .from('workflows')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(limit + 1);
+
+  if (options.cursor) {
+    query = query.lt('updated_at', options.cursor);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('[Workflows] Error listing workflows:', error);
+    throw new Error(`Failed to list workflows: ${error.message}`);
+  }
+
+  const rows = data || [];
+  const hasMore = rows.length > limit;
+  const workflows = hasMore ? rows.slice(0, limit) : rows;
+  const nextCursor = hasMore && workflows.length > 0 ? workflows[workflows.length - 1].updated_at : null;
+
+  return {
+    workflows,
+    nextCursor,
+  };
+}
+
 /**
  * Create a new workflow.
  * 
@@ -85,6 +147,24 @@ export async function getWorkflow(
 }
 
 /**
+ * Get a workflow by ID for marketplace read access.
+ */
+export async function getWorkflowById(workflowId: string): Promise<Workflow | null> {
+  const { data, error } = await supabase
+    .from('workflows')
+    .select('*')
+    .eq('id', workflowId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[Workflows] Error fetching workflow by id:', error);
+    throw new Error(`Failed to fetch workflow: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
  * Update a workflow.
  * Validates includes array before saving.
  * 
@@ -113,11 +193,15 @@ export async function updateWorkflow(
     .eq('id', workflowId)
     .eq('owner_user_id', userId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('[Workflows] Error updating workflow:', error);
     throw new Error(`Failed to update workflow: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new WorkflowNotFoundError('Workflow not found or not owned by user');
   }
 
   return data;
@@ -133,15 +217,21 @@ export async function deleteWorkflow(
   userId: string,
   workflowId: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('workflows')
     .delete()
     .eq('id', workflowId)
-    .eq('owner_user_id', userId);
+    .eq('owner_user_id', userId)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('[Workflows] Error deleting workflow:', error);
     throw new Error(`Failed to delete workflow: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new WorkflowNotFoundError('Workflow not found or not owned by user');
   }
 }
 

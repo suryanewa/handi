@@ -4,12 +4,14 @@ import { getAccessToken, refreshAccessToken } from '@/lib/auth';
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
-type ApiOptions = {
-  method?: 'GET' | 'POST';
+type ApiMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+
+export type ApiOptions = {
+  method?: ApiMethod;
   body?: unknown;
 };
 
-async function apiFetch<T>(path: string, options: ApiOptions = {}, hasRetried = false): Promise<T> {
+export async function apiFetch<T>(path: string, options: ApiOptions = {}, hasRetried = false): Promise<T> {
   const { method = 'GET', body } = options;
   const accessToken = await getAccessToken();
 
