@@ -4,6 +4,7 @@ import { getCustomerExternalId } from '../lib/auth.js';
 import { getBlockById, type BlockId } from 'shared';
 import { runBlock } from '../services/run-block.js';
 import { deductTokens, getTokenBalance } from '../store/tokenStore.js';
+import { getDemoEntitlements } from './checkout.js';
 
 const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
@@ -38,10 +39,21 @@ runBlockRouter.post('/', async (req, res) => {
       }
     }
 
-    // Feature access check (only when not in demo mode)
-    if (!DEMO_MODE && block.featureSlug !== 'free') {
-      const billing = await flowglad(userId).getBilling();
-      const hasAccess = billing.checkFeatureAccess(block.featureSlug);
+    // Feature access check 
+    if (block.featureSlug !== 'free') {
+      let hasAccess = false;
+
+      if (DEMO_MODE) {
+        // In demo mode, check our in-memory demo entitlements
+        const userEntitlements = getDemoEntitlements(userId);
+        hasAccess = userEntitlements.has(block.featureSlug);
+        console.log(`[RunBlock/Demo] User ${userId} access to ${block.featureSlug}: ${hasAccess}`);
+      } else {
+        // Real Flowglad billing check
+        const billing = await flowglad(userId).getBilling();
+        hasAccess = billing.checkFeatureAccess(block.featureSlug);
+      }
+
       if (!hasAccess) {
         return res.status(403).json({
           error: 'Block locked',

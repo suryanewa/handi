@@ -86,7 +86,7 @@ export async function createCheckoutSession(params: {
   successUrl: string;
   cancelUrl: string;
 }): Promise<CheckoutResponse['checkoutSession']> {
-  const data = await apiRequest<CheckoutResponse>('/api/cart', {
+  const data = await apiRequest<CheckoutResponse>('/api/checkout', {
     method: 'POST',
     body: params,
   });
