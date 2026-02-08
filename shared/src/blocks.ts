@@ -30,6 +30,8 @@ export interface BlockDefinition {
   usageMeterSlug?: string;
   /** Whether block uses Claude/GPT (true) or backend-only (false) */
   usesAI: boolean;
+  /** Number of tokens consumed per run (0 for free utility blocks) */
+  tokenCost: number;
   /** Optional checkout metadata resolved from Flowglad pricing model */
   priceName?: string | null;
   /** Price per unit in smallest currency unit (e.g. cents) */
@@ -51,6 +53,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     checkoutPriceSlugs: ['dummy5'],
     usageMeterSlug: 'summarize_text_runs',
     usesAI: true,
+    tokenCost: 1,
     inputs: [{ key: 'text', label: 'Text to summarize', type: 'text', required: true }],
     outputs: [{ key: 'summary', label: 'Summary' }],
   },
@@ -64,6 +67,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     checkoutPriceSlugs: ['dummy5'],
     usageMeterSlug: 'extract_emails_runs',
     usesAI: true,
+    tokenCost: 1,
     inputs: [{ key: 'text', label: 'Text to scan', type: 'text', required: true }],
     outputs: [{ key: 'emails', label: 'Extracted emails' }],
   },
@@ -77,6 +81,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     checkoutPriceSlugs: ['dummy5'],
     usageMeterSlug: 'rewrite_prompt_runs',
     usesAI: true,
+    tokenCost: 1,
     inputs: [{ key: 'text', label: 'Input to rewrite', type: 'text', required: true }],
     outputs: [{ key: 'rewritten', label: 'Rewritten text' }],
   },
@@ -90,6 +95,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     checkoutPriceSlugs: ['dummy5'],
     usageMeterSlug: 'classify_input_runs',
     usesAI: true,
+    tokenCost: 1,
     inputs: [{ key: 'text', label: 'Text to classify', type: 'text', required: true }],
     outputs: [{ key: 'label', label: 'Sentiment' }, { key: 'confidence', label: 'Confidence' }],
   },
@@ -102,6 +108,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     priceSlug: 'merge_pdfs',
     checkoutPriceSlugs: ['dummy5'],
     usesAI: false,
+    tokenCost: 1,
     inputs: [
       { key: 'files', label: 'PDF files', type: 'file', required: true },
     ],
@@ -116,6 +123,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     featureSlug: 'free',
     priceSlug: 'free',
     usesAI: false,
+    tokenCost: 0,
     inputs: [],
     outputs: [{ key: 'trigger', label: 'Signal' }],
   },
@@ -127,6 +135,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     featureSlug: 'free',
     priceSlug: 'free',
     usesAI: false,
+    tokenCost: 0,
     inputs: [
       { key: 'text1', label: 'First text', type: 'text', required: true },
       { key: 'text2', label: 'Second text', type: 'text', required: true },
@@ -142,6 +151,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     featureSlug: 'free',
     priceSlug: 'free',
     usesAI: false,
+    tokenCost: 0,
     inputs: [{ key: 'value', label: 'Value', type: 'text', required: true }],
     outputs: [{ key: 'value', label: 'Value' }],
   },
@@ -153,6 +163,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     featureSlug: 'free',
     priceSlug: 'free',
     usesAI: false,
+    tokenCost: 0,
     inputs: [
       { key: 'text', label: 'Text to check', type: 'text', required: true },
       { key: 'pattern', label: 'Contains (optional)', type: 'text', required: false },
@@ -170,6 +181,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     checkoutPriceSlugs: ['translate_text_usage'],
     usageMeterSlug: 'translate_text_runs',
     usesAI: true,
+    tokenCost: 1,
     inputs: [
       { key: 'text', label: 'Text to translate', type: 'text', required: true },
       { key: 'targetLanguage', label: 'Target language (e.g. Spanish, French)', type: 'text', required: true },
@@ -186,6 +198,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     checkoutPriceSlugs: ['text_to_speech_usage'],
     usageMeterSlug: 'text_to_speech_runs',
     usesAI: true,
+    tokenCost: 1,
     inputs: [
       { key: 'text', label: 'Text to speak', type: 'text', required: true },
       { key: 'voiceId', label: 'ElevenLabs Voice ID (optional)', type: 'text', required: false },
@@ -202,6 +215,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     checkoutPriceSlugs: ['speech_to_text_usage'],
     usageMeterSlug: 'speech_to_text_runs',
     usesAI: true,
+    tokenCost: 1,
     inputs: [
       { key: 'audioBase64', label: 'Audio file (base64)', type: 'text', required: true },
       { key: 'language', label: 'Language code (e.g. en, es)', type: 'text', required: false },
@@ -216,6 +230,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     featureSlug: 'free',
     priceSlug: 'free',
     usesAI: false,
+    tokenCost: 0,
     inputs: [
       { key: 'webhookUrl', label: 'Slack Webhook URL', type: 'text', required: true },
       { key: 'message', label: 'Message to send', type: 'text', required: true },
@@ -230,6 +245,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     featureSlug: 'free',
     priceSlug: 'free',
     usesAI: false,
+    tokenCost: 0,
     inputs: [
       { key: 'webhookUrl', label: 'Discord Webhook URL', type: 'text', required: true },
       { key: 'message', label: 'Message to send', type: 'text', required: true },
@@ -244,6 +260,7 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     featureSlug: 'free',
     priceSlug: 'free',
     usesAI: false,
+    tokenCost: 0,
     inputs: [
       { key: 'url', label: 'URL to fetch', type: 'text', required: true },
     ],

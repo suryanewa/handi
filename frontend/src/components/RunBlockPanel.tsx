@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { X, Play, Loader2, Lock, Link2 } from 'lucide-react';
+import { X, Play, Loader2, Lock, Link2, Coins } from 'lucide-react';
 import { getBlockById, type BlockId } from 'shared';
 import { useAppBilling } from '@/contexts/AppBillingContext';
+import { useTokens } from '@/contexts/TokenContext';
 import { useExecutionLog } from '@/store/executionLog';
 import { useFlowRunStore } from '@/store/flowRunStore';
 import { getInputSource } from '@/lib/workflowLogic';
@@ -28,6 +29,7 @@ export function RunBlockPanel({
   const block = getBlockById(data.blockId as BlockId);
   const { hasFeatureAccess } = useAppBilling();
   const hasAccess = block ? hasFeatureAccess(block.featureSlug) : false;
+  const { balance, deductLocally, refresh: refreshTokens } = useTokens();
   const getOutput = useFlowRunStore((s) => s.getOutput);
   const setNodeOutput = useFlowRunStore((s) => s.setNodeOutput);
   const getOutputs = useFlowRunStore((s) => s.outputsByNode[nodeId]);
@@ -35,6 +37,7 @@ export function RunBlockPanel({
   const [inputs, setInputs] = useState<Record<string, string>>({});
   const [output, setOutput] = useState<Record<string, unknown> | null>(() => getOutputs ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [needsTokens, setNeedsTokens] = useState(false);
   const [loading, setLoading] = useState(false);
   const logAdd = useExecutionLog((s) => s.add);
 
@@ -86,20 +89,32 @@ export function RunBlockPanel({
     if (!hasAccess) return;
     setLoading(true);
     setError(null);
+    setNeedsTokens(false);
     setOutput(null);
     const payload = { ...resolvedInputs };
     try {
       const json = await runBlock({ blockId: block.id, inputs: payload });
+      if (block.tokenCost > 0) {
+        deductLocally(block.tokenCost);
+      }
       const outputs = json.outputs ?? {};
       setOutput(outputs);
       setNodeOutput(nodeId, outputs);
       logAdd({ blockName: data.label, blockId: block.id, success: true, output: outputs });
     } catch (e) {
-      const errMsg = e instanceof Error ? e.message : 'Request failed';
-      setError(errMsg);
-      logAdd({ blockName: data.label, blockId: block.id, success: false, error: errMsg });
+      const err = e as Error & { status?: number; data?: { needsPurchase?: boolean; tokenCost?: number; currentBalance?: number } };
+      if (err.status === 402 && err.data?.needsPurchase) {
+        setError(`Insufficient tokens. Need ${err.data.tokenCost ?? block.tokenCost}, you have ${err.data.currentBalance ?? balance}.`);
+        setNeedsTokens(true);
+        logAdd({ blockName: data.label, blockId: block.id, success: false, error: 'Insufficient tokens' });
+      } else {
+        const errMsg = err.message || 'Request failed';
+        setError(errMsg);
+        logAdd({ blockName: data.label, blockId: block.id, success: false, error: errMsg });
+      }
     } finally {
       setLoading(false);
+      refreshTokens();
     }
   };
 
@@ -179,7 +194,7 @@ export function RunBlockPanel({
             {missingLabel && missingLabel.type === 'connected' && (
               <p className="text-xs text-amber-300">Run &quot;{missingLabel.sourceLabel}&quot; first to fill connected inputs.</p>
             )}
-            <div className="flex gap-2">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={handleRun}
                 disabled={loading || !canRun}
@@ -188,6 +203,12 @@ export function RunBlockPanel({
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 Run
               </button>
+              {block.tokenCost > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-400">
+                  <Coins className="h-3.5 w-3.5" />
+                  <span>{block.tokenCost} token{block.tokenCost !== 1 ? 's' : ''}</span>
+                </div>
+              )}
             </div>
           </>
         )}
