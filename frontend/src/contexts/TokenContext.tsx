@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+import { API_URL, DEMO_USER_ID } from '@/lib/api';
 
 interface TokenContextValue {
     balance: number;
@@ -27,7 +26,7 @@ export function TokenProvider({ children }: { children: ReactNode }) {
     const refresh = async () => {
         try {
             const res = await fetch(`${API_URL}/api/tokens`, {
-                headers: { 'X-User-Id': 'demo-user-2' },
+                headers: { 'X-User-Id': DEMO_USER_ID },
             });
             if (res.ok) {
                 const data = await res.json();
@@ -51,7 +50,7 @@ export function TokenProvider({ children }: { children: ReactNode }) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-User-Id': 'demo-user-2',
+                    'X-User-Id': DEMO_USER_ID,
                 },
             });
             if (res.ok) {
