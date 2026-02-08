@@ -15,6 +15,8 @@ import {
   useReactFlow,
   type Connection,
   type Edge,
+  type OnEdgesChange,
+  type OnNodesChange,
   type Node,
   type NodeTypes,
 } from '@xyflow/react';
@@ -27,7 +29,7 @@ import {
   LayoutGrid,
   Trash2,
 } from 'lucide-react';
-import { BlockNode } from '@/components/BlockNode';
+import { BlockNode, type BlockFlowNode, type BlockNodeData } from '@/components/BlockNode';
 import { BlockPalette } from '@/components/BlockPalette';
 import { RunBlockPanel } from '@/components/RunBlockPanel';
 import { ExecutionLogPanel } from '@/components/ExecutionLogPanel';
@@ -44,9 +46,12 @@ import { useFlowRunStore } from '@/store/flowRunStore';
 import { useExecutionLog } from '@/store/executionLog';
 import { useTheme } from '@/contexts/ThemeContext';
 
+type FlowNode = BlockFlowNode;
+type FlowEdge = Edge;
+
 const nodeTypes: NodeTypes = { block: BlockNode };
 
-const DEFAULT_NODES: Node[] = [
+const DEFAULT_NODES: FlowNode[] = [
   {
     id: '1',
     type: 'block',
@@ -61,13 +66,13 @@ const DEFAULT_NODES: Node[] = [
   },
 ];
 
-const DEFAULT_EDGES: Edge[] = [];
+const DEFAULT_EDGES: FlowEdge[] = [];
 
 /** Test workflow: Constant → Summarize Text. Use "Prepopulate" button to load this. */
-function getPrepopulateFlow(): { nodes: Node[]; edges: Edge[] } {
+function getPrepopulateFlow(): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const constantBlock = getBlockById('constant');
   const summarizeBlock = getBlockById('summarize-text');
-  const nodes: Node[] = [
+  const nodes: FlowNode[] = [
     {
       id: 'prepop-constant',
       type: 'block',
@@ -89,7 +94,7 @@ function getPrepopulateFlow(): { nodes: Node[]; edges: Edge[] } {
       },
     },
   ];
-  const edges: Edge[] = [
+  const edges: FlowEdge[] = [
     {
       id: 'prepop-e1',
       source: 'prepop-constant',
@@ -103,12 +108,12 @@ function getPrepopulateFlow(): { nodes: Node[]; edges: Edge[] } {
 
 const FLOW_STORAGE_KEY = 'devfest-flow';
 
-function loadFlow(): { nodes: Node[]; edges: Edge[] } {
+function loadFlow(): { nodes: FlowNode[]; edges: FlowEdge[] } {
   if (typeof window === 'undefined') return { nodes: DEFAULT_NODES, edges: DEFAULT_EDGES };
   try {
     const raw = localStorage.getItem(FLOW_STORAGE_KEY);
     if (!raw) return { nodes: DEFAULT_NODES, edges: DEFAULT_EDGES };
-    const parsed = JSON.parse(raw) as { nodes?: Node[]; edges?: Edge[] };
+    const parsed = JSON.parse(raw) as { nodes?: FlowNode[]; edges?: FlowEdge[] };
     if (Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
       return { nodes: parsed.nodes, edges: parsed.edges };
     }
@@ -120,8 +125,8 @@ function loadFlow(): { nodes: Node[]; edges: Edge[] } {
 
 const DRAG_TYPE = 'application/reactflow';
 
-type ContextMenuState = { node: Node; x: number; y: number } | null;
-type RunPanelState = { id: string; data: { blockId: string; label: string; icon?: string } } | null;
+type ContextMenuState = { node: FlowNode; x: number; y: number } | null;
+type RunPanelState = { id: string; data: BlockNodeData } | null;
 
 function FlowCanvas({
   nodes,
@@ -140,12 +145,12 @@ function FlowCanvas({
   onNodeDoubleClick,
   theme,
 }: {
-  nodes: Node[];
-  setNodes: (u: Node[] | ((prev: Node[]) => Node[])) => void;
-  onNodesChange: (changes: unknown) => void;
-  edges: Edge[];
-  setEdges: (u: Edge[] | ((prev: Edge[]) => Edge[])) => void;
-  onEdgesChange: (changes: unknown) => void;
+  nodes: FlowNode[];
+  setNodes: (u: FlowNode[] | ((prev: FlowNode[]) => FlowNode[])) => void;
+  onNodesChange: OnNodesChange<FlowNode>;
+  edges: FlowEdge[];
+  setEdges: (u: FlowEdge[] | ((prev: FlowEdge[]) => FlowEdge[])) => void;
+  onEdgesChange: OnEdgesChange<FlowEdge>;
   contextMenu: ContextMenuState;
   setContextMenu: (v: ContextMenuState) => void;
   runPanelNode: RunPanelState;
@@ -153,7 +158,7 @@ function FlowCanvas({
   selectedNodeIds: string[];
   setSelectedNodeIds: (ids: string[]) => void;
   removeNodes: (ids: string[]) => void;
-  onNodeDoubleClick: (event: React.MouseEvent, node: Node) => void;
+  onNodeDoubleClick: (event: React.MouseEvent, node: FlowNode) => void;
   theme: 'dark' | 'light';
 }) {
   const { screenToFlowPosition } = useReactFlow();
@@ -188,7 +193,7 @@ function FlowCanvas({
         x: event.clientX,
         y: event.clientY,
       });
-      const newNode: Node = {
+      const newNode: FlowNode = {
         id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         type: 'block',
         position: { x: position.x - 90, y: position.y - 24 },
@@ -204,7 +209,7 @@ function FlowCanvas({
   );
 
   const handleNodeContextMenu = useCallback(
-    (event: React.MouseEvent, node: Node) => {
+    (event: React.MouseEvent, node: FlowNode) => {
       event.preventDefault();
       setContextMenu({ node, x: event.clientX, y: event.clientY });
     },
@@ -212,7 +217,7 @@ function FlowCanvas({
   );
 
   const onSelectionChange = useCallback(
-    ({ nodes: selected }: { nodes: Node[] }) => {
+    ({ nodes: selected }: { nodes: FlowNode[] }) => {
       setSelectedNodeIds(selected.map((n) => n.id));
     },
     [setSelectedNodeIds]
@@ -318,8 +323,8 @@ function FlowCanvas({
 }
 
 export default function DashboardPage() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(DEFAULT_NODES);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(DEFAULT_EDGES);
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(DEFAULT_NODES);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(DEFAULT_EDGES);
 
   // Load from localStorage only after hydration to avoid mismatch
   useEffect(() => {
@@ -473,7 +478,7 @@ export default function DashboardPage() {
         x: 120 + (nodes.length % 4) * 240,
         y: 100 + Math.floor(nodes.length / 4) * 120,
       };
-      const newNode: Node = {
+      const newNode: FlowNode = {
         id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         type: 'block',
         position: { x: pos.x, y: pos.y },
@@ -512,8 +517,8 @@ export default function DashboardPage() {
       reader.onload = () => {
         try {
           const json = JSON.parse(reader.result as string) as {
-            nodes?: Node[];
-            edges?: Edge[];
+            nodes?: FlowNode[];
+            edges?: FlowEdge[];
           };
           if (Array.isArray(json.nodes)) setNodes(json.nodes);
           if (Array.isArray(json.edges)) setEdges(json.edges);

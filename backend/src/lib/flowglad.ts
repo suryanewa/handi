@@ -1,8 +1,7 @@
 import { FlowgladServer } from '@flowglad/server';
 
-const DEMO_MODE_REQUESTED = process.env.DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 const SECRET_KEY = process.env.FLOWGLAD_SECRET_KEY;
-const DEMO_MODE = DEMO_MODE_REQUESTED;
 
 // In-memory stub for hackathon demo. Replace with real DB (e.g. Supabase) for production.
 const DEMO_USERS: Record<string, { email: string; name: string }> = {

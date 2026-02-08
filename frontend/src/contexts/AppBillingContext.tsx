@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { createCheckoutSession as apiCreateCheckoutSession, getEntitlementsData } from '@/lib/api';
+import { DEMO_MODE, createCheckoutSession as apiCreateCheckoutSession, getEntitlementsData } from '@/lib/api';
 
 export type AppBillingValue = {
   loaded: boolean;
@@ -55,6 +55,7 @@ export function AppBillingRoot({ children }: { children: ReactNode }) {
       setSubscriptions(data.billing?.subscriptions ?? []);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch entitlements';
+      // Keep app usable — set error but don't crash. Paid blocks remain locked.
       setEntitlementsError(message);
       setEntitlements({});
       setSubscriptions([]);

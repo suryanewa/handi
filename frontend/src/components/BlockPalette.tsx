@@ -5,6 +5,8 @@ import { Brain, Mail, PenLine, TestTube, FileStack, Play, Layers, Type, GitBranc
 import { BLOCK_DEFINITIONS, type BlockDefinition } from 'shared';
 import { useAppBilling } from '@/contexts/AppBillingContext';
 
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Brain,
   Mail,
@@ -75,7 +77,7 @@ export function BlockPalette({
         ) : (
           filtered.map((block) => {
             const Icon = ICON_MAP[block.icon] ?? Brain;
-            const hasAccess = !loaded || hasFeatureAccess(block.featureSlug);
+            const hasAccess = DEMO_MODE || !loaded || hasFeatureAccess(block.featureSlug);
             return (
               <div
                 key={block.id}

@@ -12,14 +12,12 @@ import { webhookRouter } from './routes/webhook.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
-const DEMO_MODE_REQUESTED = process.env.DEMO_MODE === 'true';
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 const FLOWGLAD_SECRET_KEY = process.env.FLOWGLAD_SECRET_KEY;
-const DEMO_MODE = DEMO_MODE_REQUESTED;
 
 // Log configuration on startup
 console.log('=== Backend Configuration ===');
-console.log('DEMO_MODE requested:', DEMO_MODE_REQUESTED);
-console.log('DEMO_MODE effective:', DEMO_MODE);
+console.log('DEMO_MODE:', DEMO_MODE);
 console.log('FLOWGLAD_SECRET_KEY set:', !!FLOWGLAD_SECRET_KEY);
 console.log('FLOWGLAD_SECRET_KEY length:', FLOWGLAD_SECRET_KEY?.length ?? 0);
 console.log('FLOWGLAD_SECRET_KEY prefix:', FLOWGLAD_SECRET_KEY ? `${FLOWGLAD_SECRET_KEY.substring(0, 10)}...` : 'not set');

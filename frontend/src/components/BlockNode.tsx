@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { Handle, type NodeProps, Position } from '@xyflow/react';
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react';
 import { Brain, Mail, PenLine, TestTube, FileStack, Play, Layers, Type, GitBranch, Check } from 'lucide-react';
 import { getBlockById, type BlockId } from 'shared';
 import { useFlowRunStore } from '@/store/flowRunStore';
@@ -29,11 +29,14 @@ function mockOutputType(key: string): string {
   return 'any';
 }
 
+export type BlockNodeData = { blockId: string; label: string; icon?: string };
+export type BlockFlowNode = Node<BlockNodeData, 'block'>;
+
 function BlockNodeComponent({
   id,
   data,
   selected,
-}: NodeProps<{ blockId: string; label: string; icon?: string }>) {
+}: NodeProps<BlockFlowNode>) {
   const block = getBlockById((data.blockId || 'summarize-text') as BlockId);
   const Icon = data.icon && ICON_MAP[data.icon] ? ICON_MAP[data.icon] : Brain;
   const inputs = block?.inputs ?? [{ key: 'input', label: 'Input', type: 'text' as const }];
