@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Receipt, ShieldCheck, Activity, ExternalLink } from 'lucide-react';
 import { BLOCK_DEFINITIONS } from 'shared';
 import { useAppBilling } from '@/contexts/AppBillingContext';
-import { DEMO_MODE } from '@/lib/api';
 import { useExecutionLog } from '@/store/executionLog';
 
 export default function ProfilePage() {
@@ -31,18 +30,17 @@ export default function ProfilePage() {
   }, [entries]);
 
   const unlockedBlocks = useMemo(() => {
-    if (DEMO_MODE) return BLOCK_DEFINITIONS.length;
-    return BLOCK_DEFINITIONS.filter((block) => entitlements[block.featureSlug]).length;
+    return BLOCK_DEFINITIONS.filter((block) => block.featureSlug === 'free' || entitlements[block.featureSlug]).length;
   }, [entitlements]);
 
-  if (!DEMO_MODE && !loaded) {
-    return <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 text-sm text-app-soft md:px-6">Loading billing profile…</div>;
+  if (!loaded) {
+    return <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 text-sm text-app-soft md:px-6">Loading billing profile…</div>;
   }
 
   const activeSubs = subscriptions?.filter((sub) => sub.status === 'active' || sub.status === 'trialing') ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 md:px-6 md:py-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 md:px-6 md:py-8">
       <h1 className="text-2xl font-semibold tracking-tight text-app-fg">Profile</h1>
       <p className="mt-1 text-sm text-app-soft">Track account access, usage snapshots, subscriptions, and invoices.</p>
 
@@ -82,7 +80,7 @@ export default function ProfilePage() {
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {BLOCK_DEFINITIONS.map((block) => {
             const count = usageByBlock.get(block.id) ?? 0;
-            const unlocked = DEMO_MODE || Boolean(entitlements[block.featureSlug]);
+            const unlocked = block.featureSlug === 'free' || Boolean(entitlements[block.featureSlug]);
             return (
               <div key={block.id} className="rounded-lg border border-app bg-app-surface p-3">
                 <p className="text-sm font-medium text-app-fg">{block.name}</p>

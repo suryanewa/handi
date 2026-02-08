@@ -7,7 +7,7 @@ import { useAppBilling } from '@/contexts/AppBillingContext';
 import { useExecutionLog } from '@/store/executionLog';
 import { useFlowRunStore } from '@/store/flowRunStore';
 import { getInputSource } from '@/lib/workflowLogic';
-import { DEMO_MODE, createCheckoutSession, runBlock } from '@/lib/api';
+import { createCheckoutSession, runBlock } from '@/lib/api';
 import type { Node, Edge } from '@xyflow/react';
 
 type NodeData = { blockId: string; label: string; icon?: string };
@@ -27,7 +27,7 @@ export function RunBlockPanel({
 }) {
   const block = getBlockById(data.blockId as BlockId);
   const { hasFeatureAccess } = useAppBilling();
-  const hasAccess = DEMO_MODE || (block ? hasFeatureAccess(block.featureSlug) : false);
+  const hasAccess = block ? hasFeatureAccess(block.featureSlug) : false;
   const getOutput = useFlowRunStore((s) => s.getOutput);
   const setNodeOutput = useFlowRunStore((s) => s.setNodeOutput);
   const getOutputs = useFlowRunStore((s) => s.outputsByNode[nodeId]);

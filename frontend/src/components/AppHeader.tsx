@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FlaskConical, Store, ShoppingCart, User, MoonStar, Sun } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useCartStore } from '@/store/cartStore';
 
 const NAV = [
   { href: '/marketplace', label: 'Marketplace', icon: Store },
@@ -15,6 +16,7 @@ const NAV = [
 export function AppHeader() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const cartCount = useCartStore((state) => state.blockIds.length);
 
   return (
     <header className="sticky top-0 z-20 shrink-0 border-b border-app bg-app-surface/85 backdrop-blur">
@@ -38,6 +40,11 @@ export function AppHeader() {
               >
                 <Icon className="h-4 w-4" />
                 {label}
+                {href === '/cart' && cartCount > 0 && (
+                  <span className="rounded-full bg-blue-500/20 px-1.5 py-0.5 text-[11px] font-semibold text-blue-300">
+                    {cartCount}
+                  </span>
+                )}
               </Link>
             );
           })}

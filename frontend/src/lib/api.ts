@@ -60,6 +60,8 @@ export type CheckoutResponse = {
     id?: string;
     url?: string;
   } | null;
+  id?: string;
+  url?: string;
 };
 
 export type RunBlockResponse = {
@@ -86,11 +88,15 @@ export async function createCheckoutSession(params: {
   successUrl: string;
   cancelUrl: string;
 }): Promise<CheckoutResponse['checkoutSession']> {
-  const data = await apiRequest<CheckoutResponse>('/api/cart', {
+  const data = await apiRequest<CheckoutResponse>('/api/checkout', {
     method: 'POST',
     body: params,
   });
-  return data.checkoutSession;
+  if (data.checkoutSession) return data.checkoutSession;
+  if (data.url || data.id) {
+    return { id: data.id, url: data.url };
+  }
+  return null;
 }
 
 export async function runBlock(params: {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, CheckCircle2, Loader2, Lock, Play, Sparkles, Wrench } from 'lucide-react';
+import { ChevronDown, CheckCircle2, Loader2, Lock, Play, Sparkles, Wrench, ShoppingCart } from 'lucide-react';
 import type { BlockDefinition } from 'shared';
 import { runBlock } from '@/lib/api';
 
@@ -11,9 +11,19 @@ type BlockCardProps = {
   hasAccess: boolean;
   compact?: boolean;
   onUnlock: () => Promise<void>;
+  onAddToCart?: () => void;
+  inCart?: boolean;
 };
 
-export function BlockCard({ block, icon, hasAccess, compact = false, onUnlock }: BlockCardProps) {
+export function BlockCard({
+  block,
+  icon,
+  hasAccess,
+  compact = false,
+  onUnlock,
+  onAddToCart,
+  inCart = false,
+}: BlockCardProps) {
   const [inputs, setInputs] = useState<Record<string, string>>({});
   const [output, setOutput] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,11 +35,14 @@ export function BlockCard({ block, icon, hasAccess, compact = false, onUnlock }:
   const hasFileInputs = block.inputs.some((input) => input.type === 'file');
   const requiredMissing = textInputs.some((input) => input.required && !(inputs[input.key] ?? '').trim());
   const canQuickRun = hasAccess && textInputs.length === 0 && !hasFileInputs;
-  const billingType = block.priceSlug.includes('subscription')
-    ? 'Subscription'
-    : block.priceSlug.includes('usage')
-      ? 'Usage'
-      : 'Included';
+  const billingType = block.priceSlug === 'free'
+    ? 'Included'
+    : block.priceSlug.includes('subscription')
+      ? 'Subscription'
+      : block.priceSlug.includes('usage')
+        ? 'Usage'
+        : 'Purchase';
+  const isPurchaseBlock = billingType === 'Purchase';
 
   const handleRun = async () => {
     setLoading(true);
@@ -101,7 +114,9 @@ export function BlockCard({ block, icon, hasAccess, compact = false, onUnlock }:
         </div>
 
         <div className="mb-4 flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full border border-app px-2 py-1 text-app-soft">{billingType}</span>
+          {(!isPurchaseBlock || hasAccess) && (
+            <span className="rounded-full border border-app px-2 py-1 text-app-soft">{billingType}</span>
+          )}
           <span className="rounded-full border border-app px-2 py-1 font-mono text-[11px] text-app-soft">{block.priceSlug}</span>
           {block.usesAI ? (
             <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/35 bg-blue-500/10 px-2 py-1 text-blue-300">
@@ -139,14 +154,28 @@ export function BlockCard({ block, icon, hasAccess, compact = false, onUnlock }:
               )}
             </>
           ) : (
-            <button
-              onClick={handleUnlock}
-              disabled={unlocking}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {unlocking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-              Unlock
-            </button>
+            <>
+              {isPurchaseBlock ? (
+                <button
+                  type="button"
+                  onClick={onAddToCart ?? handleUnlock}
+                  disabled={Boolean(onAddToCart && inCart)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-app px-4 py-2 text-sm font-medium text-app-fg transition hover:bg-app-surface disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {onAddToCart && inCart ? <CheckCircle2 className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+                  {onAddToCart && inCart ? 'In cart' : 'Purchase'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleUnlock}
+                  disabled={unlocking}
+                  className="inline-flex items-center gap-2 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {unlocking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  Unlock now
+                </button>
+              )}
+            </>
           )}
         </div>
 

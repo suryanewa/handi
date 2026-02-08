@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   Brain,
   CheckCircle2,
@@ -21,7 +22,8 @@ import {
 } from 'lucide-react';
 import { useAppBilling } from '@/contexts/AppBillingContext';
 import { BlockCard } from '@/components/BlockCard';
-import { DEMO_MODE, createCheckoutSession, getProducts } from '@/lib/api';
+import { createCheckoutSession, getProducts } from '@/lib/api';
+import { useCartStore } from '@/store/cartStore';
 import type { BlockDefinition } from 'shared';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -45,11 +47,14 @@ export default function LibraryPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
   const [kindFilter, setKindFilter] = useState<'all' | 'ai' | 'utility'>('all');
-  const [billingFilter, setBillingFilter] = useState<'all' | 'usage' | 'subscription' | 'included'>('all');
+  const [billingFilter, setBillingFilter] = useState<'all' | 'usage' | 'subscription' | 'purchase' | 'included'>('all');
   const [sortBy, setSortBy] = useState<'featured' | 'name'>('featured');
   const [compactView, setCompactView] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
+  const cartBlockIds = useCartStore((state) => state.blockIds);
+  const addBlockToCart = useCartStore((state) => state.addBlock);
+  const removeBlockFromCart = useCartStore((state) => state.removeBlock);
 
   useEffect(() => {
     let active = true;
@@ -81,14 +86,25 @@ export default function LibraryPage() {
     }
   }, [checkoutStatus, refreshEntitlements]);
 
+  useEffect(() => {
+    if (!products.length) return;
+    for (const product of products) {
+      if (hasFeatureAccess(product.featureSlug)) {
+        removeBlockFromCart(product.id);
+      }
+    }
+  }, [products, hasFeatureAccess, removeBlockFromCart]);
+
   const productsWithMeta = useMemo(() => {
     return products.map((product) => {
-      const hasAccess = DEMO_MODE || hasFeatureAccess(product.featureSlug);
-      const billingType = product.priceSlug.includes('subscription')
-        ? 'subscription'
-        : product.priceSlug.includes('usage')
-          ? 'usage'
-          : 'included';
+      const hasAccess = hasFeatureAccess(product.featureSlug);
+      const billingType = product.priceSlug === 'free'
+        ? 'included'
+        : product.priceSlug.includes('subscription')
+          ? 'subscription'
+          : product.priceSlug.includes('usage')
+            ? 'usage'
+            : 'purchase';
       return {
         product,
         hasAccess,
@@ -206,11 +222,7 @@ export default function LibraryPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2 text-xs">
-        {DEMO_MODE ? (
-          <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-3 py-1 text-emerald-300">
-            Demo mode: all blocks unlocked
-          </span>
-        ) : entitlementsLoading ? (
+        {entitlementsLoading ? (
           <span className="rounded-full border border-app px-3 py-1 text-app-soft">Loading entitlements…</span>
         ) : entitlementsError ? (
           <span className="rounded-full border border-rose-500/35 bg-rose-500/10 px-3 py-1 text-rose-300">
@@ -231,6 +243,14 @@ export default function LibraryPage() {
           <span className="rounded-full border border-amber-500/35 bg-amber-500/10 px-3 py-1 text-amber-300">
             Checkout cancelled.
           </span>
+        )}
+        {cartBlockIds.length > 0 && (
+          <Link
+            href="/cart"
+            className="inline-flex items-center rounded-full border border-blue-500/35 bg-blue-500/10 px-3 py-1 text-blue-300 transition hover:bg-blue-500/20"
+          >
+            {cartBlockIds.length} in cart
+          </Link>
         )}
       </div>
 
@@ -322,6 +342,7 @@ export default function LibraryPage() {
                     ['all', 'All billing'],
                     ['usage', 'Usage-based'],
                     ['subscription', 'Subscription'],
+                    ['purchase', 'One-time purchase'],
                     ['included', 'Included'],
                   ] as const
                 ).map(([value, label]) => (
@@ -391,7 +412,7 @@ export default function LibraryPage() {
           ) : (
             <div className={`grid gap-3 ${compactView ? 'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' : 'sm:grid-cols-2 xl:grid-cols-3'}`}>
               {filteredProducts.map((block) => {
-                const hasAccess = DEMO_MODE || hasFeatureAccess(block.featureSlug);
+                const hasAccess = hasFeatureAccess(block.featureSlug);
                 const Icon = ICON_MAP[block.icon] ?? Brain;
 
                 return (
@@ -402,6 +423,8 @@ export default function LibraryPage() {
                     hasAccess={hasAccess}
                     compact={compactView}
                     onUnlock={() => handleUnlock(block.priceSlug)}
+                    onAddToCart={hasAccess ? undefined : () => addBlockToCart(block.id)}
+                    inCart={cartBlockIds.includes(block.id)}
                   />
                 );
               })}

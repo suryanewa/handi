@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Brain, Mail, PenLine, TestTube, FileStack, Play, Layers, Type, GitBranch, Search } from 'lucide-react';
+import { Brain, Mail, PenLine, TestTube, FileStack, Play, Layers, Type, GitBranch, Search, Lock } from 'lucide-react';
 import { BLOCK_DEFINITIONS, type BlockDefinition } from 'shared';
+import { useAppBilling } from '@/contexts/AppBillingContext';
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Brain,
@@ -29,6 +30,7 @@ export function BlockPalette({
   onAddBlock?: (block: BlockDefinition) => void;
 }) {
   const [search, setSearch] = useState('');
+  const { hasFeatureAccess, loaded } = useAppBilling();
 
   const filtered = useMemo(() => {
     if (!search.trim()) return BLOCK_DEFINITIONS;
@@ -42,7 +44,7 @@ export function BlockPalette({
 
   return (
     <aside
-      className="h-full w-full overflow-hidden rounded-2xl border border-app bg-app-surface/70"
+      className="w-64 shrink-0 overflow-hidden border-r border-app bg-app-surface/70"
       onDragOver={(e) => e.preventDefault()}
     >
       <div className="border-b border-app p-3.5">
@@ -73,19 +75,26 @@ export function BlockPalette({
         ) : (
           filtered.map((block) => {
             const Icon = ICON_MAP[block.icon] ?? Brain;
+            const hasAccess = !loaded || hasFeatureAccess(block.featureSlug);
             return (
               <div
                 key={block.id}
                 draggable
                 onDragStart={(e) => onDragStart(e, block.id, block.name, block.icon)}
                 onClick={() => onAddBlock?.(block)}
-                className="group cursor-grab rounded-xl border border-app bg-app-surface px-3 py-2.5 text-app-fg transition hover:border-blue-500/60 hover:bg-app-surface active:cursor-grabbing"
+                className={`group cursor-grab rounded-xl border px-3 py-2.5 transition active:cursor-grabbing ${
+                  hasAccess
+                    ? 'border-app bg-app-surface text-app-fg hover:border-blue-500/60 hover:bg-app-surface'
+                    : 'border-amber-500/35 bg-amber-500/10 text-app-fg hover:border-amber-500/60'
+                }`}
+                title={hasAccess ? block.description : 'Locked block: unlock in Marketplace or from Run panel'}
               >
                 <div className="flex items-center gap-2">
                   <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-app bg-app-card">
-                    <Icon className="h-3.5 w-3.5 text-blue-300 group-hover:text-blue-200" />
+                    <Icon className={`h-3.5 w-3.5 ${hasAccess ? 'text-blue-300 group-hover:text-blue-200' : 'text-amber-300'}`} />
                   </span>
                   <span className="truncate text-sm font-medium">{block.name}</span>
+                  {!hasAccess && <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-amber-300" />}
                 </div>
                 <p className="mt-1 truncate text-[11px] text-app-soft">{block.description}</p>
               </div>
