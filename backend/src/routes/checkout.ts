@@ -12,18 +12,39 @@ checkoutRouter.post('/', async (req, res) => {
       successUrl: string;
       cancelUrl: string;
     };
+
+    console.log(`[Checkout] Request for customer: ${userId}, price: ${priceSlug}`);
+
     if (!priceSlug || !successUrl || !cancelUrl) {
       return res.status(400).json({ error: 'priceSlug, successUrl, cancelUrl required' });
     }
-    await flowglad(userId).findOrCreateCustomer();
-    const { checkoutSession } = await flowglad(userId).createCheckoutSession({
+
+    const fgClient = flowglad(userId);
+
+    // Step 1: Ensure customer exists
+    console.log('[Checkout] Creating/finding customer...');
+    await fgClient.findOrCreateCustomer();
+    console.log('[Checkout] Customer ready');
+
+    // Step 2: Create checkout session
+    console.log('[Checkout] Creating checkout session...');
+    const result = await fgClient.createCheckoutSession({
       priceSlug,
       successUrl,
       cancelUrl,
     });
-    res.json({ checkoutSession });
-  } catch (e) {
-    console.error('checkout error', e);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+
+    console.log('[Checkout] Success:', JSON.stringify(result, null, 2));
+    res.json(result);
+  } catch (e: unknown) {
+    // Extract detailed error info
+    const err = e as { message?: string; error?: { error?: string }; status?: number };
+    const message = err?.error?.error || err?.message || 'Unknown error';
+    const status = err?.status || 500;
+
+    console.error('[Checkout] Error:', message);
+    console.error('[Checkout] Full error:', JSON.stringify(e, null, 2));
+
+    res.status(status).json({ error: message });
   }
 });

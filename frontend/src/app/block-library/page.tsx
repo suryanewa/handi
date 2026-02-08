@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Brain, Mail, PenLine, TestTube, FileStack, Play, Layers, Type, GitBranch } from 'lucide-react';
 import { useAppBilling } from '@/contexts/AppBillingContext';
 import { BlockCard } from '@/components/BlockCard';
+import { BLOCK_DEFINITIONS } from 'shared';
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -19,30 +19,9 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   GitBranch,
 };
 
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  featureSlug: string;
-  priceSlug: string;
-  usageMeterSlug?: string;
-  usesAI: boolean;
-  inputs: { key: string; label: string; type: string }[];
-  outputs: { key: string; label: string }[];
-};
-
 export default function BlockLibraryPage() {
   const { checkFeatureAccess, loaded, createCheckoutSession } = useAppBilling();
-  const [products, setProducts] = useState<Product[]>([]);
-
-  useEffect(() => {
-    const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-    fetch(`${api}/api/products`)
-      .then((r) => r.json())
-      .then((d) => setProducts(d.products ?? []))
-      .catch(() => setProducts([]));
-  }, []);
+  const products = BLOCK_DEFINITIONS;
 
   if (!DEMO_MODE && !loaded) {
     return (

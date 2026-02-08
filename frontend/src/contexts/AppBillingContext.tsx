@@ -21,8 +21,8 @@ export type AppBillingValue = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   invoices?: any[] | null;
   billingPortalUrl?: string | null;
-  reload?: () => void;
-  errors?: unknown[];
+  reload?: (() => void) | null;
+  errors?: unknown[] | null;
   hasError?: boolean;
 };
 
@@ -93,12 +93,53 @@ function FlowgladBillingBridge({ children }: { children: ReactNode }) {
   // If there are errors, provide a fallback that locks all blocks
   const hasApiError = billing.errors && billing.errors.length > 0;
 
+  // Custom checkout that calls our backend (which handles findOrCreateCustomer)
+  const customCreateCheckoutSession = async (opts: {
+    priceSlug: string;
+    successUrl: string;
+    cancelUrl: string;
+    autoRedirect?: boolean;
+  }) => {
+    console.log('[Checkout] Creating session for:', opts.priceSlug);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': 'demo-user-2',
+        },
+        body: JSON.stringify(opts),
+      });
+
+      const data = await response.json();
+      console.log('[Checkout] Response:', data);
+
+      if (data.error) {
+        console.error('[Checkout] Error:', data.error);
+        alert(`Checkout error: ${data.error}`);
+        return {};
+      }
+
+      const checkoutUrl = data.url ?? data.checkoutSession?.checkoutUrl;
+      if (checkoutUrl && opts.autoRedirect !== false) {
+        console.log('[Checkout] Redirecting to:', checkoutUrl);
+        window.location.href = checkoutUrl;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[Checkout] Network error:', error);
+      alert('Failed to create checkout session. Check console for details.');
+      return {};
+    }
+  };
+
   const value: AppBillingValue = hasApiError
     ? ERROR_FALLBACK_BILLING
     : {
       loaded: billing.loaded,
       checkFeatureAccess: billing.checkFeatureAccess,
-      createCheckoutSession: billing.createCheckoutSession,
+      createCheckoutSession: customCreateCheckoutSession,
       customer: billing.customer,
       subscriptions: billing.subscriptions,
       invoices: billing.invoices,
@@ -143,7 +184,7 @@ export function AppBillingRoot({ children }: { children: ReactNode }) {
         requestConfig={{
           baseURL: apiBase,
           headers: {
-            'X-User-Id': 'demo-user-1', // Simplified auth for demo
+            'X-User-Id': 'demo-user-2', // Simplified auth for demo
           },
         }}
       >
