@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Brain,
-  CheckCircle2,
   Filter,
   Mail,
   PenLine,
@@ -20,8 +19,6 @@ import {
   Sparkles,
   Wrench,
   ShoppingCart,
-  X,
-  ArrowRight,
 } from 'lucide-react';
 import { useAppBilling } from '@/contexts/AppBillingContext';
 import { BlockCard } from '@/components/BlockCard';
@@ -44,7 +41,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 function MarketplaceContent() {
   const searchParams = useSearchParams();
   const checkoutStatus = searchParams.get('checkout');
-  const { hasFeatureAccess, entitlementsLoading, refreshEntitlements, entitlementsError } = useAppBilling();
+  const { hasFeatureAccess, refreshEntitlements } = useAppBilling();
 
   const [products, setProducts] = useState<BlockDefinition[]>([]);
   const [search, setSearch] = useState('');
@@ -179,45 +176,26 @@ function MarketplaceContent() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 md:px-6 md:py-8">
       <div className="mb-5 rounded-2xl border border-app bg-app-surface/75 p-4 md:p-5">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-app-fg">Marketplace</h1>
-          <p className="mt-1 text-sm text-app-soft">
-            Discover blocks, apply filters quickly, and unlock tools via checkout only when needed.
-          </p>
-        </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2 text-xs">
-        {entitlementsLoading ? (
-          <span className="rounded-full border border-app px-3 py-1 text-app-soft">Loading entitlements…</span>
-        ) : entitlementsError ? (
-          <span className="rounded-full border border-rose-500/35 bg-rose-500/10 px-3 py-1 text-rose-300">
-            Entitlements unavailable: {entitlementsError}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/35 bg-blue-500/10 px-3 py-1 text-blue-300">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Entitlements synced
-          </span>
-        )}
-        {checkoutStatus === 'success' && (
-          <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-3 py-1 text-emerald-300">
-            Checkout complete. Access updated.
-          </span>
-        )}
-        {checkoutStatus === 'cancelled' && (
-          <span className="rounded-full border border-amber-500/35 bg-amber-500/10 px-3 py-1 text-amber-300">
-            Checkout cancelled.
-          </span>
-        )}
-        {cartBlockIds.length > 0 && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-app-fg">Marketplace</h1>
+            <p className="mt-1 text-sm text-app-soft">
+              Discover blocks, apply filters quickly, and unlock tools via checkout only when needed.
+            </p>
+          </div>
           <Link
             href="/cart"
-            className="inline-flex items-center rounded-full border border-blue-500/35 bg-blue-500/10 px-3 py-1 text-blue-300 transition hover:bg-blue-500/20"
+            className="relative inline-flex items-center justify-center rounded-lg border border-app p-2.5 text-app-soft transition hover:bg-app-surface hover:text-app-fg"
+            aria-label={`Cart${cartBlockIds.length > 0 ? `, ${cartBlockIds.length} items` : ''}`}
           >
-            {cartBlockIds.length} in cart
+            <ShoppingCart className="h-5 w-5" />
+            {cartBlockIds.length > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1.5 text-xs font-semibold leading-none text-white">
+                {cartBlockIds.length}
+              </span>
+            )}
           </Link>
-        )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
@@ -329,66 +307,6 @@ function MarketplaceContent() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Sidebar cart */}
-          <div className="rounded-2xl border border-app bg-app-surface/70 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="inline-flex items-center gap-2 text-sm font-medium text-app-fg">
-                <ShoppingCart className="h-4 w-4" />
-                Cart
-                {cartBlockIds.length > 0 && (
-                  <span className="rounded-full bg-blue-500/20 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-blue-300">
-                    {cartBlockIds.length}
-                  </span>
-                )}
-              </p>
-              {cartBlockIds.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => useCartStore.getState().clear()}
-                  className="text-xs text-app-soft underline-offset-4 hover:text-app-fg hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            {cartBlockIds.length === 0 ? (
-              <p className="text-xs text-app-soft">No items in cart. Add locked blocks to purchase them together.</p>
-            ) : (
-              <>
-                <div className="space-y-1.5">
-                  {cartBlockIds.map((blockId) => {
-                    const product = products.find((p) => p.id === blockId);
-                    return (
-                      <div
-                        key={blockId}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-app bg-app-card/60 px-2.5 py-2"
-                      >
-                        <span className="truncate text-xs text-app-fg">{product?.name ?? blockId}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeBlockFromCart(blockId)}
-                          className="shrink-0 rounded p-0.5 text-app-soft transition hover:bg-app-surface hover:text-rose-400"
-                          aria-label={`Remove ${product?.name ?? blockId} from cart`}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <Link
-                  href="/cart"
-                  className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-500"
-                >
-                  Checkout
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </>
-            )}
           </div>
         </aside>
 

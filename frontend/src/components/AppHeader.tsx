@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FlaskConical, Store, ShoppingCart } from 'lucide-react';
-import { useCartStore } from '@/store/cartStore';
+import { FlaskConical, Store } from 'lucide-react';
 import { TokenBalance } from './TokenBalance';
 import { TokenPurchaseModal } from './TokenPurchaseModal';
 import { UserDropdown } from './UserDropdown';
@@ -12,12 +11,10 @@ import { UserDropdown } from './UserDropdown';
 const NAV = [
   { href: '/marketplace', label: 'Marketplace', icon: Store },
   { href: '/lab', label: 'Lab', icon: FlaskConical },
-  { href: '/cart', label: 'Cart', icon: ShoppingCart },
 ] as const;
 
 export function AppHeader() {
   const pathname = usePathname();
-  const cartCount = useCartStore((state) => state.blockIds.length);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   return (
@@ -43,11 +40,6 @@ export function AppHeader() {
                 >
                   <Icon className="h-4 w-4" />
                   {label}
-                  {href === '/cart' && cartCount > 0 && (
-                    <span className="rounded-full bg-blue-500/20 px-1.5 py-0.5 text-[11px] font-semibold text-blue-300">
-                      {cartCount}
-                    </span>
-                  )}
                 </Link>
               );
             })}
